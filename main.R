@@ -23,19 +23,9 @@ rename = function(frame, old, new) {
 
 ## a function that calculates something and normalizes it.
 ## also keep a separate copy of prices, ya?
-normalize = function(frame, var, id) {
-  temp=aggregate(var ~ id, frame, FUN=sum)
-  #print(id)
-  head(temp)
-  #  temp=rename(temp, string(var),"gammasum")
-  data=merge(data, temp, by=id)
-  data$var.x = data$var.x / data$var.y
-  data$var.y=NULL
-  return(data)
-}
 
 N=5
-nonzero=ceiling(N^1.5)
+nonzero=N^2 #ceiling(N^1.5)
 sigma=2
 epsilon=2
 theta=4
@@ -60,6 +50,10 @@ data = data.frame(
   g0 = 0,
   g1 = 1)
 
+#kk. total number of plants not fully represented.
+# remove i=j.
+data=data[ data$i != data$j, ]
+ 
 p0=data.frame(i,p0)
 p1=data.frame(i,p1)
 beta=data.frame(i,beta)
@@ -69,7 +63,7 @@ beta=data.frame(i,beta)
 pj=data.frame(j,p1$p1)
 pj=rename(pj,"p1.p1","pj")
 data=merge(data, pj, by="j")
-data=merge(data, pj, by="j")
+#data=merge(data, pj, by="j")
 
 # calculate p1.
 # need the temp, depends on pj and gamma.
@@ -82,28 +76,50 @@ head(data)
 # learn to normalize. sum within i, normalize gamma?
 #tapply(data$gamma1, data$i, FUN=sum)
 
+normalize = function(frame, var, id) {
 
-x=normalize(data,"gamma","i")
-head(x)
+  temp=aggregate(reformulate(c(id), response=var), frame, FUN=sum)
+  data=merge(data, temp, by=id)
 
-#xxxxx=84903291830290)(*(@)#!(
-#                       
-#                       
+  x=paste0(var,".x")
+  y=paste0(var,".y")
+
+  data[,x] = data[,x] / data[,y]
+  data[,y]=NULL
+  data=rename(data,x,var)
+  return(data)
+}
+
+beta=0.5
+pconstant=
+
+data=normalize(data,"gamma","i")
+
+# do p1 = whatever.
+# but can just do one and then normalize.
+data$p1=data$gamma*data$pj^(1-sigma)*(1+data$tau)^(theta*(1-sigma))
+p1$p1=z^(-1)*(aggregate(reformulate(c("i"), response="p1"), data, FUN=sum)[,"p1"])^((1-beta)/(1-sigma))
+p1$p1=(beta^(-beta)*(1-beta)^(beta-1)*w1)*p1$p1
+data$g1=data$gamma*data$pj^(1-sigma)
+data=normalize(data,"g1","i")
+head(data)
+
 # # hmm, kind of annoying.
-# temp=aggregate(gamma ~ i, data, sum)
-# temp=rename(temp,"gamma","gammasum")
-# data=merge(data, temp, by="i")
-# data$gamma = data$gamma / data$gammasum
-# data$gammasum=NULL
+#temp=aggregate(gamma ~ i, data, sum)
+#temp=rename(temp,"gamma","gammasum")
+#data=merge(data, temp, by="i")
+#data$gamma = data$gamma / data$gammasum
+#data$gammasum=NULL
+
 # # drop columns I don't need, or merge properly. need to replace columns in data.
 # # doesn't look like there is one. must drop before merge.
 # 
 # # same idea, merge on price on j.
 # #temp=aggregate(p1 ~ i, data, mean) # but would rather just get "first" with really big ones, ya?
 # # just use p1 itself.
-# temp=p1
-# temp=rename(temp,"i","j")
-# temp=rename(temp,"p1","pj")
+#temp=p1
+#temp=rename(temp,"i","j")
+#temp=rename(temp,"p1","pj")
 # # drop old pj? or actuall don't have to redo this until loop.
 # #data=data[ , !names(data) %in% c("pj")]
 # data$pj=NULL
@@ -111,7 +127,7 @@ head(x)
 # head(data)
 # 
 # # now get gamma * pj^(1-sigma) * (1 + trade cost)^(elasticity)
-# data$temp=data$gamma*data$pj^(1-sigma)*(1+data$tau)^(-theta)
+#data$temp=data$gamma*data$pj^(1-sigma)*(1+data$tau)^(-theta)
 # x=aggregate(temp ~ i, data, sum)
 # data$temp=NULL
 # data=merge(data,x,by="i")
