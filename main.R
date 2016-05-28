@@ -51,6 +51,9 @@ data = data.frame(
   g0 = 0,
   g1 = 1)
 
+# say i=1 is labour?
+# should rewrite all my equations and stuff in CES, and also add distance.
+
 data = aggregate(data, by=list(data$i,data$j), FUN=mean, na.rm=TRUE)
 data$Group.1=NULL
 data$Group.2=NULL
@@ -108,29 +111,5 @@ data$g1=data$gamma*data$pj^(1-sigma)
 data$pj=NULL
 data=normalize(data,"g1","i")
 data=data[order(data$i,data$j),]
-# price doesn't come in if i not using inputs from someone else.
-# but really should still be good, but beta=1
 
-# # same idea, merge on price on j.
-# #temp=aggregate(p1 ~ i, data, mean) # but would rather just get "first" with really big ones, ya?
-# # just use p1 itself.
-#temp=p1
-#temp=rename(temp,"i","j")
-#temp=rename(temp,"p1","pj")
-# # drop old pj? or actuall don't have to redo this until loop.
-# #data=data[ , !names(data) %in% c("pj")]
-# data$pj=NULL
-# data=merge(data, temp, by="j")
-# head(data)
-# 
-# # now get gamma * pj^(1-sigma) * (1 + trade cost)^(elasticity)
-#data$temp=data$gamma*data$pj^(1-sigma)*(1+data$tau)^(-theta)
-# x=aggregate(temp ~ i, data, sum)
-# data$temp=NULL
-# data=merge(data,x,by="i")
-# # normalize that. multiply by beta.
-# 
-# 
-# head(data)
-# 
-# 
+# beta. labour. but first get loop? nah.
