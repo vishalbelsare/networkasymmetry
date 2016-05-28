@@ -1,5 +1,6 @@
 #library(ggplot2)
-library("reshape2")
+rm(list=ls(all=TRUE))
+#library("reshape2")
 
 setwd("/Users/jessetweedle/Documents/github/networkasymmetry")
 
@@ -42,7 +43,7 @@ beta=numeric(N)+1
 z=exp(rnorm(N)) # k. useful. productivities.
 
 data = data.frame(
-  i = sample(1:N, nonzero, replace = TRUE),
+  i = rep(1:N,N), #sample(1:N, nonzero, replace = TRUE),
   j = sample(1:N, nonzero, replace = TRUE), # kk.
   gamma = exp(rnorm(nonzero)), #sample(1:N, nonzero, replace = TRUE),
   tau = exp(rnorm(nonzero)), #sample(1:N, nonzero, replace = TRUE),
@@ -50,24 +51,20 @@ data = data.frame(
   g0 = 0,
   g1 = 1)
 
+data = aggregate(data, by=list(data$i,data$j), FUN=mean, na.rm=TRUE)
+data$Group.1=NULL
+data$Group.2=NULL
 #kk. total number of plants not fully represented.
 # remove i=j.
-data=data[ data$i != data$j, ]
+data=data[data$i!=data$j,]
  
 p0=data.frame(i,p0)
 p1=data.frame(i,p1)
-beta=data.frame(i,beta)
-#data=merge(data, p0, by="i")
-#data=merge(data, p1, by="i")
+#beta=data.frame(i,beta)
 
 pj=data.frame(j,p1$p1)
 pj=rename(pj,"p1.p1","pj")
 data=merge(data, pj, by="j")
-#data=merge(data, pj, by="j")
-
-# calculate p1.
-# need the temp, depends on pj and gamma.
-#data$p1 = 
 
 head(data)
 
@@ -91,29 +88,29 @@ normalize = function(frame, var, id) {
 }
 
 beta=0.5
-pconstant=
+#pconstant=
 
 data=normalize(data,"gamma","i")
-
-# do p1 = whatever.
 # but can just do one and then normalize.
 data$p1=data$gamma*data$pj^(1-sigma)*(1+data$tau)^(theta*(1-sigma))
-p1$p1=z^(-1)*(aggregate(reformulate(c("i"), response="p1"), data, FUN=sum)[,"p1"])^((1-beta)/(1-sigma))
-p1$p1=(beta^(-beta)*(1-beta)^(beta-1)*w1)*p1$p1
+p1$p1=(beta^(-beta)*(1-beta)^(beta-1)*w1)*z^(-1)
+p1=merge(p1,aggregate(reformulate(c("i"), response="p1"), data, FUN=sum),by="i", all.x=TRUE)
+data$p1=NULL
+p1$p1=p1$p1.x * p1$p1.y^((1-beta)/(1-sigma))
+p1=p1[,c("i","p1")]
+
+# then merge back on as pj
+data$pj=NULL
+pj=rename(p1,"p1","pj")
+pj=rename(pj,"i","j")
+data=merge(data, pj, by="j")
 data$g1=data$gamma*data$pj^(1-sigma)
+data$pj=NULL
 data=normalize(data,"g1","i")
-head(data)
+data=data[order(data$i,data$j),]
+# price doesn't come in if i not using inputs from someone else.
+# but really should still be good, but beta=1
 
-# # hmm, kind of annoying.
-#temp=aggregate(gamma ~ i, data, sum)
-#temp=rename(temp,"gamma","gammasum")
-#data=merge(data, temp, by="i")
-#data$gamma = data$gamma / data$gammasum
-#data$gammasum=NULL
-
-# # drop columns I don't need, or merge properly. need to replace columns in data.
-# # doesn't look like there is one. must drop before merge.
-# 
 # # same idea, merge on price on j.
 # #temp=aggregate(p1 ~ i, data, mean) # but would rather just get "first" with really big ones, ya?
 # # just use p1 itself.
