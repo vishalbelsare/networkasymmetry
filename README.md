@@ -1,2 +1,4 @@
-# networkasymmetry
-Solving network asymmetry model for JMP.
+# Granularity, Network Asymmetry, and Aggregate Volatility
+
+## Code for solving models.
+Solving model.
