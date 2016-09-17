@@ -1,10 +1,13 @@
-#### Benchmarking.
+########################
+# benchmark.R
+# Function to benchmark A and G consistent with given parameters
+# License: MIT
+####
+# "Granularity, Network Asymmetry and Aggregate Volatility"
+# Jesse Tweedle
+# Sep 15, 2016
+########################
 
-
-# Make up income by region. Will have to do this and the next one at the same time,
-# so that beta, s, regional income, are all consistent.
-
-  
 benchmark <- function(R,N,args=initialize_fake_links(R,N)) {
 
   # Generate fake edges, regional incomes, plant characteristics

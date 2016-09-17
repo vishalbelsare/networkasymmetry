@@ -1,3 +1,13 @@
+########################
+# solve_lambda_gamma.R
+# Function to solve for unobserved \Lambda and \Gamma, given observed A and G.
+# License: MIT
+####
+# "Granularity, Network Asymmetry and Aggregate Volatility"
+# Jesse Tweedle
+# Sep 15, 2016
+########################
+
 solve_lambda_gamma <- function(R,N,args=initialize_fakes(R,N)) { #A,beta,G,N,R,Ti,Tr,z) {
 
   # inputs:

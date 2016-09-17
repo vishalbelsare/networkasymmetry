@@ -1,3 +1,13 @@
+########################
+# helpers.R
+# Functions to convert to and from sparse matrices
+# License: MIT
+####
+# "Granularity, Network Asymmetry and Aggregate Volatility"
+# Jesse Tweedle
+# Sep 15, 2016
+########################
+
 ## Convert sparseMatrix to tbl_df.
 s_to_df <- function(m) {
   m %>% as("sparseMatrix") %>% summary() %>% tbl_df()

@@ -1,3 +1,13 @@
+########################
+# initialize_functions.R
+# Functions to generate fake parameters and data
+# License: MIT
+####
+# "Granularity, Network Asymmetry and Aggregate Volatility"
+# Jesse Tweedle
+# Sep 15, 2016
+########################
+
 initialize_fake_links <- function(R,N) {
   # Plant value-added share
   beta <- runif(N,0.3,0.7)

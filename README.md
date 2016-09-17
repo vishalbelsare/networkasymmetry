@@ -1,6 +1,8 @@
-# Codes
+# Code for Network Asymmetry Paper
 
 A repository for the paper "Granularity, Network Asymmetry, and Aggregate Volatility". Codes reproduce full analysis in the paper, but with fake data. Real data can be accessed through [http://www.statcan.gc.ca/eng/cder/data](CDER) at Statistics Canada.
+
+MIT License, 2016.
 
 ## To use
 
@@ -8,7 +10,7 @@ The general strategy: generate fake plant characteristics, use those to calculat
 
 Given observed demand characteristics, and the elasticity of substitution \sigma, calculate \Lambda and \Gamma. Then see how closely idiosyncratic shocks to demand and productivity can match observed covariance matrix and aggregate volatility.
 
-### Data
+## Data
 
 * ```R``` number of regions
 * ```N``` number of plants
@@ -19,7 +21,7 @@ Given observed demand characteristics, and the elasticity of substitution \sigma
 * ```Er``` matrix of extensive region-plant demand characteristics, ```RxN```
 * ```En``` matrix of extensive plant-plant demand characteristics, ```NxN```
 
-### To solve
+## To solve
 
 * ```\Lambda``` matrix of region-plant demand characteristics, ```RxN```
 * ```\Gamma``` matrix of plant-plant demand characteristics, ```NxN```

@@ -1,8 +1,9 @@
 ########################
 # main.R
 # Clean and load relevant files
+# License: MIT
 ####
-# For Granularity, Network Asymmetry and Aggregate Volatility
+# "Granularity, Network Asymmetry and Aggregate Volatility"
 # Jesse Tweedle
 # Sep 15, 2016
 ########################
