@@ -39,8 +39,8 @@ N = 5
 # args <- solve_lambda_gamma(R=R,N=N)
 # Otherwise, I have data:
 # args <- input()
+# should give beta, z, s, Er, En, ir (plant characteristic), R=75, N=30,000-ish
+# then call benchmark. then call solve_lambda_gamma.
 
 # could use better organization here. initialize, save the data. pass it in, etc.
 # need a flat heirarchy.
-# to use data: get beta, sales, Er, En, 
-
