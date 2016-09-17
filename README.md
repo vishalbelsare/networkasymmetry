@@ -8,9 +8,24 @@ The general strategy: generate fake plant characteristics, use those to calculat
 
 Given observed demand characteristics, and the elasticity of substitution \sigma, calculate \Lambda and \Gamma. Then see how closely idiosyncratic shocks to demand and productivity can match observed covariance matrix and aggregate volatility.
 
-### Generate 
+### Data
 
-### Organization:
+* ```R``` number of regions
+* ```N``` number of plants
+* ```\beta``` vector of value-added shares, ```Nx1```
+* ```s``` vector of output, ```Nx1```
+* ```z``` vector of productivities, ```Nx1```
+* ```ir``` data.frame containing a plant's id and associated region, ```Nx2```, or ```NxR``` in sparse matrix form
+* ```Er``` matrix of extensive region-plant demand characteristics, ```RxN```
+* ```En``` matrix of extensive plant-plant demand characteristics, ```NxN```
+
+### To solve
+
+* ```\Lambda``` matrix of region-plant demand characteristics, ```RxN```
+* ```\Gamma``` matrix of plant-plant demand characteristics, ```NxN```
+
+
+## Organization:
 
 * ```main.R``` sets up the environment. It loads the functions in the ```./R``` subdirectory.
 * ```helpers.R``` has useful functions to convert data frames to sparse matrices and back.
