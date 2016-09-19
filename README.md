@@ -1,6 +1,6 @@
 # Code for Network Asymmetry Paper
 
-A repository for the paper "Granularity, Network Asymmetry, and Aggregate Volatility". Codes reproduce full analysis in the paper, but with fake data. Real data can be accessed through [http://www.statcan.gc.ca/eng/cder/data](CDER) at Statistics Canada.
+A repository for the paper "Granularity, Network Asymmetry, and Aggregate Volatility". Codes reproduce full analysis in the paper, but with fake data. Real data can be accessed through [CDER](http://www.statcan.gc.ca/eng/cder/data) at Statistics Canada.
 
 (Paper and code still under development.) MIT License, 2016.
 
