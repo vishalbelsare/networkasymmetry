@@ -63,7 +63,7 @@ solve_lambda_gamma <- function(R,N,sigma,args) {  #=initialize_fakes(R,N)) { #A,
 
   # while the difference between iterations is greater than tolerance
   while (obj > tol) {
-#print(obj)
+
     # save newest iteration of parameters
     p_i0 <- p_i1
     p_r0 <- p_r1
@@ -86,20 +86,6 @@ solve_lambda_gamma <- function(R,N,sigma,args) {  #=initialize_fakes(R,N)) { #A,
       df_to_s(dims=c(R,R)) %>% 
       to_sdiag()
 
-    # p_r1 <- rowSums(LAM0 * 
-    #                   (Tr %*% 
-    #                       p_i0 %>% 
-    #                       s_to_df() %>%
-    #                       mutate(x = x^(1-sigma)) %>% 
-    #                       df_to_s(dims=c(R,N))
-    #                    )
-    #                 ) %>%
-    #   as("matrix") %>%
-    #   s_to_df() %>%
-    #   mutate(x=x^(1/(1-sigma))) %>% 
-    #   df_to_s(dims=c(R,R)) %>% 
-    #   to_sdiag()
-
     # calculate new eta ( = unit intermediate cost)
     m2 <- Ti %*% 
       p_i0 %>% 
@@ -119,22 +105,6 @@ solve_lambda_gamma <- function(R,N,sigma,args) {  #=initialize_fakes(R,N)) { #A,
     eta <- m2.1 %>% 
       to_sdiag() * 
       (C %>% to_sdiag())
-
-
-    # eta <- ((rowSums(GAM0 * 
-    #                    (Ti %*% 
-    #                       p_i0 %>%
-    #                       s_to_df() %>%
-    #                       mutate(x=x^(1-sigma)) %>% 
-    #                       df_to_s(dims=c(N,N)))) %>%
-    #            as("matrix") %>% 
-    #            s_to_df() %>% 
-    #            mutate(x=x^(1/(1-sigma)))) %>%
-    #           df_to_s(dims=c(N,1))
-    # )^(1-beta) %>%
-    #   to_sdiag() * 
-    #   (C %>% to_sdiag())
-    
         
     # calculate new p_i1    
     p_i1 <- eta / z
@@ -172,26 +142,6 @@ solve_lambda_gamma <- function(R,N,sigma,args) {  #=initialize_fakes(R,N)) { #A,
     
     GAM1 <- m3 %*% r3
     
-    # GAM1 <- (((1/(1-beta)) %>% 
-    #            to_sdiag()
-    #          ) %*%
-    #   (eta %>% 
-    #      s_to_df() %>%
-    #      mutate(x=x^(sigma-1)) %>%
-    #      df_to_s(dims=c(N,N))
-    #   )) %*%
-    #   (G * 
-    #   (Ti %*% 
-    #      p_i1 %>% 
-    #      s_to_df() %>% 
-    #      mutate(x=x^(sigma-1)) %>% 
-    #      df_to_s(dims=c(N,N))
-    #   ))
-    
-    # normalize LAM1, GAM1
-    # LAM1 <- LAM1 / rowSums(LAM1)
-    # GAM1 <- GAM1 / rowSums(GAM1)
-
     # solve for w, normalize p and p?
     obj = norm(LAM1-LAM0,"f") + norm(GAM1-GAM0,"f") + norm(p_r1-p_r0,"f") + norm(p_i1-p_i0,"f")
   }
