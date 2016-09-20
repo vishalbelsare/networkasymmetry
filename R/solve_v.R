@@ -83,15 +83,15 @@ solve_v <- function(R,N,args) {
 
   # while the difference between iterations is greater than tolerance
   while (obj > tol) {
-    print(obj)
+    # 83, 84.
+#    print(p_i1[83:84,83:84])
 
     # save newest iteration of parameters
     p_i0 <- p_i1
     p_r0 <- p_r1
 
     # calculate new p_r1
-    m1 <- Tr %*%
-      p_i0 %>%
+    m1 <- (Tr %*% p_i0) %>%
       s_to_df() %>%
       mutate(x = x^(1-sigma)) %>%
       df_to_s(dims=c(R,N))
@@ -109,6 +109,11 @@ solve_v <- function(R,N,args) {
       mutate(x=x^(1-sigma)) %>%
       df_to_s(dims=c(N,N))
 
+    # i=84, j=83. gamma
+#    print(rowSums(gamma*m2)[83:84]) # one of these is negative? one of them really is negative. can't be m2?
+#    x <- which(gamma<0)
+#    print(gamma %>% summary() %>% tbl_df() %>% filter(x<0))
+
     m2.0 <- rowSums(gamma * m2) %>%
       as("matrix") %>%
       s_to_df() %>%
@@ -122,10 +127,15 @@ solve_v <- function(R,N,args) {
       to_sdiag() *
       (C %>% to_sdiag())
 
+      # 83, 84.
+#      print(eta[83:84,83:84])
+
     # calculate new p_i1
     p_i1 <- eta / z
 
     # solve for w, normalize p and p?
+    # 83, 84.
+#    print(p_i1[83:84,83:84])
     obj = norm(p_r1-p_r0,"f") + norm(p_i1-p_i0,"f")
     if (!is.finite(obj)) {
       break
@@ -161,12 +171,15 @@ solve_v <- function(R,N,args) {
 
   G <- m3 %*% r3
 
+  # 83, 84.
+#  print(colSums(G))
+
   v0 <- rep_len(0,N)
   v1 <- rep_len(1,N)
   tol <- 1e-5 / N^2
 
   while (sum(abs(v1-v0)) > tol) {
-    print(sum(abs(v1-v0)))
+#    print(sum(abs(v1-v0)))
     v0 <- v1
     I <- ir %*% (t(t(beta))*v0)
     v1 <- t(A) %*% I + t(G) %*% v0

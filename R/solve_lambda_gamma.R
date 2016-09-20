@@ -66,7 +66,7 @@ solve_lambda_gamma <- function(R,N,args) {
 
   # while the difference between iterations is greater than tolerance
   while (obj > tol) {
-print(obj)
+#print(obj)
     # save newest iteration of parameters
     p_i0 <- p_i1
     p_r0 <- p_r1

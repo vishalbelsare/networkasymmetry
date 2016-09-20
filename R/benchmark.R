@@ -61,7 +61,7 @@ benchmark <- function(R,N,args) {
 
   # While y1 is too far from y0:
   while (obj > tol) {
-    print(str_c("obj: ",obj))
+#    print(str_c("obj: ",obj))
 
     A0 <- A1
     G0 <- G1
