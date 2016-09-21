@@ -10,21 +10,6 @@
 
 benchmark <- function(R,N,args) {
 
-# to debug:
-  # rm(list=ls(all=TRUE))
-  # gc()
-  # library(dplyr)
-  # library(tibble)
-  # library(Matrix)
-  # library(stringr)
-  # source("R/initialize_functions.R")
-  # source("R/helpers.R")
-  # R <- 2
-  # N <- 50
-  # args <- initialize_fake_links(R,N)
-
-  # conclusion: benchmarking is hard. no guarantee it will work, really.
-
   if (missing(args)) {
     args <- initialize_fake_links(R,N)
   }
@@ -49,24 +34,18 @@ benchmark <- function(R,N,args) {
 
   tol <- 1e-5 / N # should be a function of N, because of normalization by sum(y1).
 
-  A0 <- Er * 0
-  G0 <- En * 0
-  A1 <- Er
-  G1 <- En
+  A0 <- A1 <- Er
+  G0 <- G1 <- En
 
   # initialize y0, y1, objective.
-  y0 <- rep_len(0,N)
-  y1 <- rep_len(1/N,N)
-  obj <- norm(A1-A0,"f") + norm(G1-G0,"f") # sum((y1-y0)^2) %>% sqrt()
+  y0 <- y1 <- rep_len(1,N)
+  obj <- tol + 1
 
-  # While y1 is too far from y0:
   while (obj > tol) {
-#    print(str_c("obj: ",obj))
 
+    # save last iteration's solutions
     A0 <- A1
     G0 <- G1
-
-    # Save old y1 in y0
     y0 <- y1
 
     # Intermediate calculations
@@ -85,10 +64,6 @@ benchmark <- function(R,N,args) {
     G1 <- (outer(X=xn,Y=y1) * En) %>% as("sparseMatrix")
     # this one might be too big. should split into xn * En and y1 * En
 
-# 321, 347. xn has only one y1 with En turned on, and that guy's small?
-# just give this up for now. work on actual details later.
-# reset G1 to work.
-
     # A1[A1<1e-25] <- 0
     # G1[G1<1e-25] <- 0
 
@@ -98,6 +73,8 @@ benchmark <- function(R,N,args) {
     }
   }
 
+  # Some ugly stuff to correct the elements that go wacko.
+  # Find the ones that go to 0 or Inf or NaN, and pick a new one at random.
   b <- rowSums(A1)
   c <- colSums(A1)
   bx <- b==0 | is.na(b)

@@ -44,7 +44,7 @@ initialize_fake_links <- function(R,N) {
   }
 
   # Non-zero edges of plant-plant demand matrix
-  En <- rsparsematrix(N,N,density=0.01,rand.x=function(n) 1)
+  En <- rsparsematrix(N,N,density=0.005,rand.x=function(n) 1)
   while ( min(colSums(En))==0 | min(rowSums(En))==0 | sum(diag(En))>0 ) {
 
     diag(En) <- 0
