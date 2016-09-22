@@ -22,7 +22,7 @@ df_to_s <- function(tdf,dims) {
 # Convert either a one-dimensional matrix or a vector to a sparse diagonal matrix.
 # Useful alternative to perform elementwise multiplication on large sparse matrices.
 to_sdiag <- function(x) {
-  if (class(x)=="dgCMatrix") {
+  if (class(x)=="dgCMatrix" | class(x)=="dgeMatrix") {
     # If x is a matrix:
     return(.sparseDiagonal(n=length(x[,1]),x=x[,1]))
   } else if (is.vector(x)) {

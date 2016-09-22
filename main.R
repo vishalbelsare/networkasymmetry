@@ -12,6 +12,8 @@ library(dplyr)
 library(tibble)
 library(Matrix)
 library(stringr)
+library(tidyr)
+library(ggplot2)
 
 # A, G, Ti, Tr, beta, z.
 # A: matrix of observed region-plant demand shares, RxN
@@ -41,12 +43,14 @@ sourceDir <- function(path, trace = TRUE, ...) {
 
 sourceDir(paste0(getwd(),"/R"))
 
-#set.seed(10) # set.seed(10), R=2, N=300 screws up.
-R <- 10
-N <- 250
+set.seed(10) # set.seed(10), R=2, N=300 screws up.
+R <- 73
+N <- 10000
 sigma <- 2 # here.
+
 print("fake edges")
 argsx <- initialize_fake_links(R,N)
+
 print("fake shares")
 args <- initialize_fakes(R,N,args=c(sigma=sigma,argsx))
 
@@ -55,6 +59,14 @@ lg <- solve_lambda_gamma(R,N,args=c(sigma=sigma,args))
 
 print("solve for s, A, G") # should try to use existing s, A, G, as intial arguments.
 solved <- solve_v(R,N,args=c(sigma=sigma,args,lg))
+
+dat <- tibble(v=solved$v[,1],s=args$s)
+dat <- dat %>% rownames_to_column() %>% mutate(ss=sum(s),s=s/ss) %>% select(-ss) %>% gather(type,size,v:s)
+
+#plot(log(solved$v),log(args$s))
+ggplot(dat %>% spread(type,size),aes(y=s,x=v)) + geom_point() + scale_x_log10() + scale_y_log10()
+# doesn't work at all.
+ggplot(dat , aes(size,colour=type)) + geom_density() + scale_x_log10()
 
 # returns v, p_r, p_i, A, G.
 
@@ -94,7 +106,7 @@ T <- 25
 
 # the covariance function can be parallelled.
 covariance <- function(parameters,R,N,T,invariant,initial,randoms) {
-print(parameters)
+  print(str_c("sigma_z: ",parameters))
 #  sigma_l <- parameters[1]
   # sigma_g <- parameters[2]
   sigma_z <- parameters[1]
@@ -142,8 +154,17 @@ X <- covariance(parameters,R,N,T,invariant,initial,randoms_data)
 objective <- function(parameters, R, N, T, invariant, initial, X, randoms) {
   # last thing I have to do is change moments.
   # maybe aggregate volatility?
+
+  # invariant$v.
+#  invariant$v %>% df_to_s(dims=c(N,N))
+  agg_vol <- sum((invariant$v %>% to_sdiag()) %*% (X %>% df_to_s(dims=c(N,N))) %*% (invariant$v %>% to_sdiag()))
+
   Xhat <- covariance(parameters, R, N, T, invariant, initial, randoms)
-  obj <- (X %>% inner_join(Xhat,by=c("i","j")) %>% mutate(obj=(x.x-x.y)^2) %>% summarize(obj=sum(obj)))[[1]]
+  agg_vol_prime <- sum((invariant$v %>% to_sdiag()) %*% (Xhat %>% df_to_s(dims=c(N,N))) %*% (invariant$v %>% to_sdiag()))
+
+  obj <- abs(agg_vol - agg_vol_prime)
+  #obj <- (X %>% inner_join(Xhat,by=c("i","j")) %>% mutate(obj=(x.x-x.y)^2) %>% summarize(obj=sum(obj)))[[1]]
+  print(str_c("obj: ",obj," vol: ",agg_vol," vol': ",agg_vol_prime))
   return(obj)
 }
 

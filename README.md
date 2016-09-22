@@ -6,7 +6,7 @@ A repository for the paper "Granularity, Network Asymmetry, and Aggregate Volati
 
 ## To use
 
-The general strategy: generate fake plant characteristics, use those to calculate region characteristics, then generate demand shares that are consistent with those characteristics. Generate trade costs and other relevant parameters. From there, you can start the analysis. 
+The general strategy: generate fake plant characteristics, use those to calculate region characteristics, then generate demand shares that are consistent with those characteristics. Generate trade costs and other relevant parameters. From there, you can start the analysis.
 
 Given observed demand characteristics, and the elasticity of substitution \sigma, calculate \Lambda and \Gamma. Then see how closely idiosyncratic shocks to demand and productivity can match observed covariance matrix and aggregate volatility.
 
@@ -26,17 +26,12 @@ Given observed demand characteristics, and the elasticity of substitution \sigma
 * ```\Lambda``` matrix of region-plant demand characteristics, ```RxN```
 * ```\Gamma``` matrix of plant-plant demand characteristics, ```NxN```
 
-
-## Organization:
+## Functions:
 
 * ```main.R``` sets up the environment. It loads the functions in the ```./R``` subdirectory.
 * ```helpers.R``` has useful functions to convert data frames to sparse matrices and back.
 * ```initialize_functions.R``` includes the functions that create fake data. Feel free to change the parameters to get more or less sparse functions, more or less plants, more or less variance in plant parameters, and so on.
 * ```benchmark.R``` given certain parameters, calculate observed region-plant demand shares ```A``` and plant-plant demand shares ```G``` that are consistent with the parameters.
 * ```solve_lambda_gamma.R``` given the data, calculate unobserved ```\Lambda``` and ```\Gamma``` that are consistent with the data.
-* ```???``` Unnamed function to calibrate the elasticity of substitution
-* ```???``` Unnamed function to calibrate the variances of idiosyncratic shocks that match the observed covariance matrix and aggregate volatility.
-
-
-
-
+* ```solve_v.R``` Function to solve ```v``` given ```\Lambda```, ```\Gamma``` and other parameters.
+* ```?``` Unnamed function to calibrate the variances of idiosyncratic shocks that match the observed covariance matrix and aggregate volatility.

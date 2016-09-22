@@ -27,7 +27,7 @@ solve_v <- function(R,N,args) {
   p_r0 <- p_r1 <- args$p_r
   p_i0 <- p_i1 <- args$p_i
 
-  tol <- 1e-5 / N # might need to make this even smaller might need to calculate optimal tolerance.
+  tol <- 1e-5 #/ N # might need to make this even smaller might need to calculate optimal tolerance.
 
   # set objective: Frobenius norms of all matrices
   # (note: the `p`s are diagonal matrices for technical reasons)
@@ -53,6 +53,7 @@ solve_v <- function(R,N,args) {
 
     # calculate new p_i1
     p_i1 <- eta / z
+#    print(rowSums(eta))
 
     obj = norm(p_r1-p_r0,"f") + norm(p_i1-p_i0,"f")
     if (!is.finite(obj)) {
@@ -74,6 +75,7 @@ solve_v <- function(R,N,args) {
   temp.4 <- Ti %*% p_i1
   temp.4@x <- temp.4@x^(1-sigma)
   G <- temp.3 %*% (gamma * temp.4)
+
 
 # maybe this should have it's own initial level. yes, def.
   if (is.null(v)) {
