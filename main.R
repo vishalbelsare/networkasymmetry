@@ -44,8 +44,8 @@ sourceDir <- function(path, trace = TRUE, ...) {
 sourceDir(paste0(getwd(),"/R"))
 
 set.seed(10) # set.seed(10), R=2, N=300 screws up.
-R <- 73
-N <- 10000
+R <- 50
+N <- 5000
 sigma <- 2 # here.
 
 print("fake edges")
@@ -60,13 +60,13 @@ lg <- solve_lambda_gamma(R,N,args=c(sigma=sigma,args))
 print("solve for s, A, G") # should try to use existing s, A, G, as intial arguments.
 solved <- solve_v(R,N,args=c(sigma=sigma,args,lg))
 
-dat <- tibble(v=solved$v[,1],s=args$s)
-dat <- dat %>% rownames_to_column() %>% mutate(ss=sum(s),s=s/ss) %>% select(-ss) %>% gather(type,size,v:s)
-
-#plot(log(solved$v),log(args$s))
-ggplot(dat %>% spread(type,size),aes(y=s,x=v)) + geom_point() + scale_x_log10() + scale_y_log10()
-# doesn't work at all.
-ggplot(dat , aes(size,colour=type)) + geom_density() + scale_x_log10()
+# dat <- tibble(v=solved$v[,1],s=args$s)
+# dat <- dat %>% rownames_to_column() %>% mutate(ss=sum(s),s=s/ss) %>% select(-ss) %>% gather(type,size,v:s)
+#
+# #plot(log(solved$v),log(args$s))
+# ggplot(dat %>% spread(type,size),aes(y=s,x=v)) + geom_point() + scale_x_log10() + scale_y_log10()
+# # doesn't work at all.
+# ggplot(dat , aes(size,colour=type)) + geom_density() + scale_x_log10()
 
 # returns v, p_r, p_i, A, G.
 
@@ -98,6 +98,66 @@ initial <- list(
   gamma=lg$gamma,
   z=args$z
 )
+
+
+current <- list(
+  lambda=lambda,
+  gamma=gamma,
+  z=rep_len(1,N)
+)
+
+solved_z_prime <- solve_v(R,N,args=c(invariant,current))
+
+lp = lambda
+lp@x = rep_len(1,length(lp@x))
+gp = gamma
+gp@x = rep_len(1,length(gp@x))
+solved_d_prime <- solve_v(R,N,args=c(invariant,list(lambda=lp,gamma=gp,z=args$z)))
+
+Tip=args$Ti
+Trp=args$Tr
+Tip@x=rep_len(1,length(args$Ti@x))
+Trp@x=rep_len(1,length(args$Tr@x))
+solved_t_prime <- solve_v(R,N,args=c(list(
+  beta=args$beta,
+  C=args$C,
+  ir=args$ir,
+  p_i=solved$p_i,
+  p_r=solved$p_r,
+  sigma=sigma,
+  Ti=Tip,
+  Tr=Trp,
+  v=solved$v
+),initial))
+
+solved_all_prime <- solve_v(R,N,args=c(list(
+  beta=args$beta,
+  C=args$C,
+  ir=args$ir,
+  p_i=solved$p_i,
+  p_r=solved$p_r,
+  sigma=sigma,
+  Ti=Tip,
+  Tr=Trp,
+  v=solved$v
+),list(
+  lambda=lp,
+  gamma=gp,
+  z=rep_len(1,N)
+)))
+
+
+dat <- tibble(v=solved$v[,1],vz=solved_z_prime$v[,1],vd=solved_d_prime$v[,1],vt=solved_t_prime$v[,1],vall=solved_all_prime$v[,1])
+#dat <- dat %>% rownames_to_column() %>% mutate(vv=sum(vp),vp=vp/vv) %>% select(-vv) %>% gather(type,size,v:vp)
+dat <- dat %>% rownames_to_column() %>% gather(type,size,v:vall)
+
+
+#ggplot(dat , aes(size,colour=type)) + stat_density(geom="line") + scale_x_log10()
+
+p <- ggplot(dat) + stat_density(position="dodge",geom="line",aes(x=size,colour=type)) + scale_x_log10() + scale_colour_brewer(palette="Dark2")
+p
+#ggsave("plot-distributions.png", p, width=7, height=3.5, device="png")
+xxxxx
 
 # parameters <- c(0.02,0.02,0.02)
 parameters <- c(0.02)
@@ -139,6 +199,40 @@ covariance <- function(parameters,R,N,T,invariant,initial,randoms) {
   return(cov(t(g)) %>% as("sparseMatrix") %>% summary() %>% tbl_df())
 }
 
+aggregate_volatility <- function(parameters,R,N,T,invariant,initial,randoms) {
+  print(str_c("sigma_z: ",parameters))
+#  sigma_l <- parameters[1]
+  # sigma_g <- parameters[2]
+  sigma_z <- parameters[1]
+
+  g <- matrix(0,nrow=1,ncol=T)
+  for (t in 1:T) {
+#    print(t)
+
+    lambda_prime <- initial$lambda
+    # lambda_prime@x <- lambda_prime@x * (1 + qnorm(randoms$lamda_runif,0,sigma_l))
+
+    gamma_prime <- initial$gamma
+    # gamma_prime@x <- gamma_prime@x * (1 + qnorm(randoms$gamma_runif,0,sigma_g))
+
+    z_prime <- initial$z * (1 + qnorm(randoms$z_runif[t,] %>% as.vector(),0,sigma_z))
+
+    current <- list(
+      lambda=lambda_prime,
+      gamma=gamma_prime,
+      z=z_prime
+    )
+
+    solved_prime <- solve_v(R,N,args=c(invariant,current))
+
+    g_prime = (log(solved_prime$v) - log(invariant$v)) * invariant$v
+    g[1,t] <- sum(g_prime[,1])
+  }
+
+  # say this is the data.
+  return(var(g[1,]))
+}
+
 # say this is the data.
 
 print("calculate ```data```")
@@ -149,7 +243,9 @@ randoms_data <- list(
   z_runif=matrix(runif(N*T,0,1),nrow=T,ncol=N)
 )
 
-X <- covariance(parameters,R,N,T,invariant,initial,randoms_data)
+#X <- covariance(parameters,R,N,T,invariant,initial,randoms_data)
+X <- aggregate_volatility(parameters,R,N,T,invariant,initial,randoms_data)
+xxx
 
 objective <- function(parameters, R, N, T, invariant, initial, X, randoms) {
   # last thing I have to do is change moments.
