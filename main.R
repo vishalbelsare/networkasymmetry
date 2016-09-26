@@ -154,9 +154,24 @@ dat <- dat %>% rownames_to_column() %>% gather(type,size,v:vall)
 
 #ggplot(dat , aes(size,colour=type)) + stat_density(geom="line") + scale_x_log10()
 
-p <- ggplot(dat) + stat_density(position="dodge",geom="line",aes(x=size,colour=type)) + scale_x_log10() + scale_colour_brewer(palette="Dark2")
-p
-#ggsave("plot-distributions.png", p, width=7, height=3.5, device="png")
+p <- ggplot(dat) + 
+  stat_density(position="dodge",geom="line",aes(x=size,colour=type)) + 
+  scale_x_log10() + #scale_colour_brewer(palette="Dark2") +
+  scale_colour_brewer(palette="Dark2", name="Counterfactual",
+                        breaks=c("v", "vall","vd","vt","vz"),
+                        labels=c("Data", "All","Demand","Geography","Productivity")) +
+  labs(x="Size (normalized, log scale)",y="Density")
+
+px <- p + theme_bw() + 
+  theme(panel.border = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        legend.justification=c(1,1),
+        legend.position=c(1,1)
+        )
+
+ggsave("plot-distributions.png", px, width=7, height=5, device="png")
 xxxxx
 
 # parameters <- c(0.02,0.02,0.02)
