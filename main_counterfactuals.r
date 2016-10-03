@@ -45,7 +45,7 @@ sourceDir(paste0(getwd(),"/R"))
 
 set.seed(10) # set.seed(10), R=2, N=300 screws up.
 R <- 50
-N <- 10000
+N <- 1000
 sigma <- 2 # here.
 
 print("fake edges")
@@ -231,5 +231,7 @@ cor(z,outdegree)
 cor(z,z_aug)
 
 # ok.
+
+
 
 # definitely negative in fake data, since for a given s, drawing high z means inferring low values for other parameters.
