@@ -45,7 +45,7 @@ sourceDir(paste0(getwd(),"/R"))
 
 set.seed(10) # set.seed(10), R=2, N=300 screws up.
 R <- 50
-N <- 5000
+N <- 500
 sigma <- 2 # here.
 
 print("fake edges")
@@ -60,6 +60,7 @@ lg <- solve_lambda_gamma(R,N,args=c(sigma=sigma,args))
 print("solve for s, A, G") # should try to use existing s, A, G, as intial arguments.
 solved <- solve_v(R,N,args=c(sigma=sigma,args,lg))
 
+print("done")
 # dat <- tibble(v=solved$v[,1],s=args$s)
 # dat <- dat %>% rownames_to_column() %>% mutate(ss=sum(s),s=s/ss) %>% select(-ss) %>% gather(type,size,v:s)
 #
@@ -98,81 +99,6 @@ initial <- list(
   gamma=lg$gamma,
   z=args$z
 )
-
-
-current <- list(
-  lambda=lambda,
-  gamma=gamma,
-  z=rep_len(1,N)
-)
-
-solved_z_prime <- solve_v(R,N,args=c(invariant,current))
-
-lp = lambda
-lp@x = rep_len(1,length(lp@x))
-gp = gamma
-gp@x = rep_len(1,length(gp@x))
-solved_d_prime <- solve_v(R,N,args=c(invariant,list(lambda=lp,gamma=gp,z=args$z)))
-
-Tip=args$Ti
-Trp=args$Tr
-Tip@x=rep_len(1,length(args$Ti@x))
-Trp@x=rep_len(1,length(args$Tr@x))
-solved_t_prime <- solve_v(R,N,args=c(list(
-  beta=args$beta,
-  C=args$C,
-  ir=args$ir,
-  p_i=solved$p_i,
-  p_r=solved$p_r,
-  sigma=sigma,
-  Ti=Tip,
-  Tr=Trp,
-  v=solved$v
-),initial))
-
-solved_all_prime <- solve_v(R,N,args=c(list(
-  beta=args$beta,
-  C=args$C,
-  ir=args$ir,
-  p_i=solved$p_i,
-  p_r=solved$p_r,
-  sigma=sigma,
-  Ti=Tip,
-  Tr=Trp,
-  v=solved$v
-),list(
-  lambda=lp,
-  gamma=gp,
-  z=rep_len(1,N)
-)))
-
-
-dat <- tibble(v=solved$v[,1],vz=solved_z_prime$v[,1],vd=solved_d_prime$v[,1],vt=solved_t_prime$v[,1],vall=solved_all_prime$v[,1])
-#dat <- dat %>% rownames_to_column() %>% mutate(vv=sum(vp),vp=vp/vv) %>% select(-vv) %>% gather(type,size,v:vp)
-dat <- dat %>% rownames_to_column() %>% gather(type,size,v:vall)
-
-
-#ggplot(dat , aes(size,colour=type)) + stat_density(geom="line") + scale_x_log10()
-
-p <- ggplot(dat) + 
-  stat_density(position="dodge",geom="line",aes(x=size,colour=type)) + 
-  scale_x_log10() + #scale_colour_brewer(palette="Dark2") +
-  scale_colour_brewer(palette="Dark2", name="Counterfactual",
-                        breaks=c("v", "vall","vd","vt","vz"),
-                        labels=c("Data", "All","Demand","Geography","Productivity")) +
-  labs(x="Size (normalized, log scale)",y="Density")
-
-px <- p + theme_bw() + 
-  theme(panel.border = element_blank(), 
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(), 
-        axis.line = element_line(colour = "black"),
-        legend.justification=c(1,1),
-        legend.position=c(1,1)
-        )
-
-ggsave("plot-distributions.png", px, width=7, height=5, device="png")
-xxxxx
 
 # parameters <- c(0.02,0.02,0.02)
 parameters <- c(0.02)
@@ -260,7 +186,6 @@ randoms_data <- list(
 
 #X <- covariance(parameters,R,N,T,invariant,initial,randoms_data)
 X <- aggregate_volatility(parameters,R,N,T,invariant,initial,randoms_data)
-xxx
 
 objective <- function(parameters, R, N, T, invariant, initial, X, randoms) {
   # last thing I have to do is change moments.

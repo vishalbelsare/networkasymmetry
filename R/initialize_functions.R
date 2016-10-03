@@ -126,10 +126,10 @@ initialize_fakes <- function(R,N,args) {
   G.df <- G %>% s_to_df()
 
   # Generate trade cost matrix, plant-plant.
-  Ti <- sparseMatrix(i=G.df$i, j=G.df$j, x=1, dims=c(N,N)) * (1+matrix(rlnorm(N^2,-1,4),nrow=N,ncol=N)) %>% as("sparseMatrix")
+  Ti <- sparseMatrix(i=G.df$i, j=G.df$j, x=1, dims=c(N,N)) * (1+matrix(rlnorm(N^2,-1,2),nrow=N,ncol=N)) %>% as("sparseMatrix")
 
   # Generate trade cost matrix, region-plant.
-  Tr <- sparseMatrix(i=A.df$i, j=A.df$j, x=1, dims=c(R,N)) * (1+matrix(rlnorm(R*N,-1,4),nrow=R,ncol=N)) %>% as("sparseMatrix")
+  Tr <- sparseMatrix(i=A.df$i, j=A.df$j, x=1, dims=c(R,N)) * (1+matrix(rlnorm(R*N,-1,2),nrow=R,ncol=N)) %>% as("sparseMatrix")
 
   # Return fake data; don't need non-zero edge matrices anymore.
   return(list(A=A,beta=beta,C=C,G=G,I=I,ir=ir,s=s,Ti=Ti,Tr=Tr,z=z))
