@@ -3,7 +3,7 @@
 # Clean and load relevant files
 # License: MIT
 
-# "Granularity, Network Asymmetry and Aggregate Volatility"
+# ""
 # Jesse Tweedle
 # Sep 15, 2016
 ########################################################################
@@ -26,7 +26,6 @@ library(ggplot2)
 # Tr: trade costs matrix for region-plants, RxN
 # z: vector of plant productivity, Nx1
 
-
 rm(list=ls(all=TRUE))
 # Sometimes R or RStudio (?) doesn't automatically clean removed objects. I think.
 # That's a problem with a NxN matrix when N really big. So clean just in case:
@@ -44,9 +43,11 @@ sourceDir <- function(path, trace = TRUE, ...) {
 sourceDir(paste0(getwd(),"/R"))
 
 set.seed(10) # set.seed(10), R=2, N=300 screws up.
-R <- 50
-N <- 1000
+R <- 5
+N <- 5000
 sigma <- 2 # here.
+eta <- 2
+epsilon <- 2
 
 print("fake edges")
 argsx <- initialize_fake_links(R,N)
@@ -64,152 +65,98 @@ print("done")
 
 # counterfactuals
 
-# 1. set all z to 1
-
-# 2. set all gamma, lambda to 1
-
-# 3. set all tau to 1
-
-# 4. all intensive margin counterfactuals
-
-# 5. extensive margin lambda and tau.
-
-# returns v, p_r, p_i, A, G.
-
-v <- solved$v
-z <- args$z
-lambda <- lg$lambda
-gamma <- lg$gamma
-
-# beta, C, ir, lambda, gamma, Ti, Tr, v, z
-invariant <- list(
-  beta=args$beta,
-  C=args$C,
-  ir=args$ir,
-  p_i=solved$p_i,
-  p_r=solved$p_r,
-  sigma=sigma,
-  Ti=args$Ti,
-  Tr=args$Tr,
-  v=solved$v
-)
-
-initial <- list(
-  lambda=lg$lambda,
-  gamma=lg$gamma,
-  z=args$z
-)
-
-
-current <- list(
-  lambda=lambda,
-  gamma=gamma,
-  z=rep_len(1,N)
-)
-
+# 1. set everything but z to 1 (or 1/N)
 ext_args <- list(
   beta=args$beta,
   C=args$C,
-  ir=args$ir,
-  p_i=solved$p_i,
-  p_r=solved$p_r,
-  sigma=sigma,
-  v=solved$v,
+  eta=eta,
+  epsilon=epsilon,
   z=args$z
 )
 
-# ok, decent.
-solved_z_ext <- solve_v_dense_network(R,N,args=c(sigma,ext_args))
+z_ext <- solve_v_dense_network(R,N,args=ext_args)
 
-solved_z_prime <- solve_v(R,N,args=c(invariant,current))
+# 2. set everything but gamma, lambda to 1
+Tip <- args$Ti
+Trp <- args$Tr
+Tip@x <- rep_len(1,length(args$Ti@x))
+Trp@x <- rep_len(1,length(args$Tr@x))
 
-lp = lambda
-lp@x = rep_len(1,length(lp@x))
-gp = gamma
-gp@x = rep_len(1,length(gp@x))
-solved_d_prime <- solve_v(R,N,args=c(invariant,list(lambda=lp,gamma=gp,z=args$z)))
-
-xlp = rowSums(lambda)^(-1) %>% to_sdiag()
-lp_aug = xlp %*% lambda
-xgp = rowSums(gamma)^(-1) %>% to_sdiag()
-gp_aug = xgp %*% gamma
-solved_d_aug_prime <- solve_v(R,N,args=c(invariant,list(lambda=lp_aug,gamma=gp_aug,z=args$z)))
-
-solved_z_aug_prime <- solve_v(R,N,args=c(invariant,list(lambda=lp_aug,gamma=gp_aug,z=rep_len(1,N))))
-
-
-# and another one that sets z and z_aug to 0.
-
-Tip=args$Ti
-Trp=args$Tr
-Tip@x=rep_len(1,length(args$Ti@x))
-Trp@x=rep_len(1,length(args$Tr@x))
-solved_t_prime <- solve_v(R,N,args=c(list(
+demand_args <- list(
   beta=args$beta,
   C=args$C,
   ir=args$ir,
   p_i=solved$p_i,
   p_r=solved$p_r,
+  s=args$s,
   sigma=sigma,
   Ti=Tip,
   Tr=Trp,
-  v=solved$v
-),initial))
-
-solved_all_prime <- solve_v(R,N,args=c(list(
-  beta=args$beta,
-  C=args$C,
-  ir=args$ir,
-  p_i=solved$p_i,
-  p_r=solved$p_r,
-  sigma=sigma,
-  Ti=Tip,
-  Tr=Trp,
-  v=solved$v
-),list(
-  lambda=lp,
-  gamma=gp,
+  v=solved$v,
+  lambda=lg$lambda,
+  gamma=lg$gamma,
   z=rep_len(1,N)
-)))
+)
+
+d_c <- solve_v(R,N,args=demand_args)
+
+# set everything but Tau to 1. This one's tough, since matrix will be dense.
+
+# lp = lambda
+# lp@x = rep_len(1,length(lp@x))
+# gp = gamma
+# gp@x = rep_len(1,length(gp@x))
+# solved_d_prime <- solve_v(R,N,args=c(invariant,list(lambda=lp,gamma=gp,z=args$z)))
+#
+# xlp = rowSums(lambda)^(-1) %>% to_sdiag()
+# lp_aug = xlp %*% lambda
+# xgp = rowSums(gamma)^(-1) %>% to_sdiag()
+# gp_aug = xgp %*% gamma
+# solved_d_aug_prime <- solve_v(R,N,args=c(invariant,list(lambda=lp_aug,gamma=gp_aug,z=args$z)))
+# solved_z_aug_prime <- solve_v(R,N,args=c(invariant,list(lambda=lp_aug,gamma=gp_aug,z=rep_len(1,N))))
 
 dat <- tibble(
-  v=solved$v[,1],
-  vz=solved_z_prime$v[,1],
-  vd=solved_d_prime$v[,1],
-  vt=solved_t_prime$v[,1],
-  vdaug=solved_d_aug_prime$v[,1],
-  vzaug=solved_z_aug_prime$v[,1],
-  vext=solved_z_ext$v,
-  vall=solved_all_prime$v[,1]
+  z=args$z,
+  beta=args$beta,
+  s=args$s,
+  Data=solved$v[,1],
+  Productivity=z_ext$v,
+  Demand=d_c$v[,1]
 )
 
 #dat <- dat %>% rownames_to_column() %>% mutate(vv=sum(vp),vp=vp/vv) %>% select(-vv) %>% gather(type,size,v:vp)
-dat <- dat %>% rownames_to_column() %>% gather(type,size,v:vall)
+dat <- dat %>% rownames_to_column() %>% gather(type,size,Data:Demand)
 
 #ggplot(dat , aes(size,colour=type)) + stat_density(geom="line") + scale_x_log10()
 
-p <- ggplot(dat %>% filter(type!="vall")) +
+p <- ggplot(dat) + # %>% filter(type=="v" | type=="vext")) +
   stat_density(position="dodge",geom="line",aes(x=size,colour=type)) +
-  scale_x_log10() + #scale_colour_brewer(palette="Dark2") +
-  # scale_colour_brewer(palette="Dark2", name="Counterfactual",
-  #                       breaks=c("v","vd","vt","vz","vall","vext"),
-  #                       labels=c("Data", "Demand","Geography","Productivity","All","Extensive")) +
-  labs(x="Size (normalized, log scale)",y="Density")
+  scale_x_log10() + labs(x="Size (normalized, log scale)",y="Density")
+#p
 
-px <- p + #theme_bw() +
+px <- p + theme_bw() +
   theme(panel.border = element_blank(),
-        # panel.grid.major = element_blank(),
-        # panel.grid.minor = element_blank(),
         axis.line = element_line(colour = "black"),
         legend.justification=c(0,1),
         legend.position=c(0,1)
         )
-
 px
+
+# compare:
+# d2 <- tibble(v=solved_z_ext$v,p=solved_z_ext$p_i,z=args$z)
+# ggplot(d2) + geom_point(aes(x=v,y=p)) + scale_x_log10() + scale_y_log10()
+
+# see
+ggplot(dat) + geom_point(aes(x=z,y=size,colour=type)) + scale_x_log10() + scale_y_log10()
+
 
 print(
 dat %>% group_by(type) %>% mutate(size=size^2) %>% summarize(size=sum(size)) %>% mutate(size=sqrt(size))
 )
+
+
+
+xxx
 #ggsave("plot-distributions.png", px, width=7, height=5, device="png")
 
 
