@@ -44,10 +44,9 @@ sourceDir(paste0(getwd(),"/R"))
 
 set.seed(10) # set.seed(10), R=2, N=300 screws up.
 R <- 5
-N <- 5000
+N <- 7000
 sigma <- 2 # here.
-eta <- 2
-epsilon <- 2
+eta <- epsilon <- sigma
 
 print("fake edges")
 argsx <- initialize_fake_links(R,N)
@@ -64,14 +63,26 @@ solved <- solve_v(R,N,args=c(sigma=sigma,args,lg))
 print("done")
 
 # counterfactuals
+#^((beta-1)/(1-epsilon))
+xlp <- rowSums(lg$lambda)^(-1) %>% to_sdiag()
+lp_aug <- xlp %*% lg$lambda
+xgp <- rowSums(lg$gamma)^(-1) %>% to_sdiag()
+gp_aug <- xgp %*% lg$gamma
+#^((beta-1)/(1-eta))
+z_aug <- args$z * rowSums(lg$gamma)^((1-args$beta)/(eta-1))
+
+# htf can I keep love-of-variety constant? Adding a million products to production function
+# want the augmented bit to stay constant. So go back to production function, not the other thing.
+# Normalize gamma, or gamma 1/N.
 
 # 1. set everything but z to 1 (or 1/N)
 ext_args <- list(
-  beta=args$beta,
-  C=args$C,
+  beta=rep_len(0.5,N), #args$beta,
   eta=eta,
   epsilon=epsilon,
-  z=args$z
+  lambda=(1/N),
+  gamma=(1/N),
+  z=z_aug #* (1/N)^((1-args$beta)/eta)
 )
 
 z_ext <- solve_v_dense_network(R,N,args=ext_args)
@@ -95,44 +106,100 @@ demand_args <- list(
   v=solved$v,
   lambda=lg$lambda,
   gamma=lg$gamma,
-  z=rep_len(1,N)
+  z=rep_len(mean(args$z),N) # ok, so this does work. only question is whether it matters in the data. extensive margin shouldn't matter here, yea? why does productivity matter so much here? dunno. hope it not like this in the data.
 )
 
 d_c <- solve_v(R,N,args=demand_args)
 
-# set everything but Tau to 1. This one's tough, since matrix will be dense.
+beta_args <- list(
+  beta=rep_len(0.5,N),
+  C=args$C,
+  ir=args$ir,
+  p_i=solved$p_i,
+  p_r=solved$p_r,
+  s=args$s,
+  sigma=sigma,
+  Ti=args$Ti,
+  Tr=args$Tr,
+  v=solved$v,
+  lambda=lg$lambda,
+  gamma=lg$gamma,
+  z=args$z
+)
 
-# lp = lambda
-# lp@x = rep_len(1,length(lp@x))
-# gp = gamma
-# gp@x = rep_len(1,length(gp@x))
-# solved_d_prime <- solve_v(R,N,args=c(invariant,list(lambda=lp,gamma=gp,z=args$z)))
-#
-# xlp = rowSums(lambda)^(-1) %>% to_sdiag()
-# lp_aug = xlp %*% lambda
-# xgp = rowSums(gamma)^(-1) %>% to_sdiag()
-# gp_aug = xgp %*% gamma
-# solved_d_aug_prime <- solve_v(R,N,args=c(invariant,list(lambda=lp_aug,gamma=gp_aug,z=args$z)))
-# solved_z_aug_prime <- solve_v(R,N,args=c(invariant,list(lambda=lp_aug,gamma=gp_aug,z=rep_len(1,N))))
+beta_c <- solve_v(R,N,args=beta_args)
+
+augment_args <- list(
+  beta=args$beta,
+  C=args$C,
+  ir=args$ir,
+  p_i=solved$p_i,
+  p_r=solved$p_r,
+  s=args$s,
+  sigma=sigma,
+  Ti=args$Ti,
+  Tr=args$Tr,
+  v=solved$v,
+  lambda=lp_aug,
+  gamma=gp_aug,
+  z=z_aug
+)
+
+aug_c <- solve_v(R,N,args=augment_args)
+#solved_z_aug_prime <- solve_v(R,N,args=c(invariant,list(lambda=lp_aug,gamma=gp_aug,z=rep_len(1,N))))
+
+# Higher order interconnections---set demand network to constant by j.
+# also extensive margin things? To get there, I'll have to re-write solve_v_dense.
+
+#lp <- lg$lambda
+#lp@x <- rep_len(1,length(lp@x))
+#lp@x <- rep_len(row)
+#lp <- (N / R * rowSums(lp)^(-1) %>% to_sdiag()) %*% lp %*% (colSums(lg$lambda) %>% to_sdiag())
+lamd <- colSums(lp_aug)
+gamd <- colSums(gp_aug)
+lamd <- lamd / sum(lamd)
+gamd <- gamd / sum(gamd)
+#rowSums(lg$lambda)
+
+#lp <- lp %*% (colSums(lg$lambda) %>% to_sdiag())
+
+# gp <- lg$gamma
+# gp@x <- rep_len(1,length(gp@x))
+# #gp <- gp %*% (colSums(lg$gamma) %>% to_sdiag())
+# gp <- (rowSums(gp)^(-1) %>% to_sdiag()) %*% gp %*% (colSums(lg$gamma) %>% to_sdiag())
+#(rowSums(gp) - rowSums(lg$gamma)) %>% summary()
+
+#gamma_ext <- rowSums(lg$gamma)
+
+higher_order_args <- list(
+  beta=args$beta,
+  eta=eta,
+  epsilon=epsilon,
+  lambda=lamd,
+  gamma=gamd,
+  z=args$z
+)
+
+ho_c <- solve_v_dense_network(R,N,args=higher_order_args)
 
 dat <- tibble(
   z=args$z,
-  beta=args$beta,
+  # beta=args$beta,
   s=args$s,
   Data=solved$v[,1],
   Productivity=z_ext$v,
+  Augmented=aug_c$v[,1],
+  # Beta=beta_c$v[,1],
+  "Higher Order"=ho_c$v,
   Demand=d_c$v[,1]
 )
 
 #dat <- dat %>% rownames_to_column() %>% mutate(vv=sum(vp),vp=vp/vv) %>% select(-vv) %>% gather(type,size,v:vp)
 dat <- dat %>% rownames_to_column() %>% gather(type,size,Data:Demand)
 
-#ggplot(dat , aes(size,colour=type)) + stat_density(geom="line") + scale_x_log10()
-
 p <- ggplot(dat) + # %>% filter(type=="v" | type=="vext")) +
-  stat_density(position="dodge",geom="line",aes(x=size,colour=type)) +
+  stat_density(position="dodge",trim=TRUE,geom="line",aes(x=size,colour=type)) +
   scale_x_log10() + labs(x="Size (normalized, log scale)",y="Density")
-#p
 
 px <- p + theme_bw() +
   theme(panel.border = element_blank(),
@@ -142,43 +209,9 @@ px <- p + theme_bw() +
         )
 px
 
-# compare:
-# d2 <- tibble(v=solved_z_ext$v,p=solved_z_ext$p_i,z=args$z)
-# ggplot(d2) + geom_point(aes(x=v,y=p)) + scale_x_log10() + scale_y_log10()
-
 # see
-ggplot(dat) + geom_point(aes(x=z,y=size,colour=type)) + scale_x_log10() + scale_y_log10()
-
+ggplot(dat) + geom_point(aes(x=s,y=size,colour=type),alpha=0.3) + scale_x_log10() + scale_y_log10()
 
 print(
-dat %>% group_by(type) %>% mutate(size=size^2) %>% summarize(size=sum(size)) %>% mutate(size=sqrt(size))
+  dat %>% group_by(type) %>% mutate(size=size^2) %>% summarize(size=sum(size)) %>% mutate(size=sqrt(size))
 )
-
-
-
-xxx
-#ggsave("plot-distributions.png", px, width=7, height=5, device="png")
-
-
-# so, get correlations in data between productivity, gamma, lambda, etc. correlation between productivity of customers and demand parameters?
-# idea:
-# so, compare lambda, gamma, z. in data. gamma -> outdegree, etc.
-#
-# lambda <- lg$lambda
-# gamma <- lg$gamma
-lambda <- lp_aug
-gamma <- gp_aug
-# outdegree <-
-outdegree <- colSums(lambda) + colSums(gamma)
-z_aug <- rowSums(gamma) #apply(gamma,1,FUN=mean) #m/lapply or whatever.
-# then compare to z, outd, v, z_aug, and?
-# correlations, dist, scatters.
-
-cor(z,outdegree)
-cor(z,z_aug)
-
-# ok.
-
-
-
-# definitely negative in fake data, since for a given s, drawing high z means inferring low values for other parameters.

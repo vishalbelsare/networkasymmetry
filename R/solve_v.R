@@ -27,7 +27,7 @@ solve_v <- function(R,N,args) {
   p_r0 <- p_r1 <- args$p_r
   p_i0 <- p_i1 <- args$p_i
 
-  tol <- 1e-5 #/ N # might need to make this even smaller might need to calculate optimal tolerance.
+  tol <- 1e-5 / N # might need to make this even smaller might need to calculate optimal tolerance.
 
   # set objective: Frobenius norms of all matrices
   # (note: the `p`s are diagonal matrices for technical reasons)

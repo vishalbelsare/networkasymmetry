@@ -10,16 +10,18 @@
 
 solve_v_dense_network <- function(R,N,args) {
 
-  C <- args$C
   beta <- args$beta
   z <- args$z
+  # need gamma, lambda, here. single vector, multiplies by p_i0 in p_r, p_m eqs.
+  lambda <- args$lambda
+  gamma <- args$gamma
 
   epsilon <- args$epsilon
   eta <- args$eta
 
   p_i0 <- p_i1 <- rep_len(1,N)
 
-  tol <- 1e-5 / N
+  tol <- 1e-5 / sqrt(N)
 
   obj = tol + 1
 
@@ -29,22 +31,25 @@ solve_v_dense_network <- function(R,N,args) {
     p_i0 <- p_i1
 
     # calculate new p_r1
-    p_r <- sum((1/N)*p_i0^(1-epsilon))^(1/(1-epsilon)) # could be epsilon instead.
-    p_m <- sum((1/N)*p_i0^(1-eta))^(1/(1-eta))
+    p_r <- sum(lambda*p_i0^(1-epsilon))^(1/(1-epsilon)) # could be epsilon instead.
+    p_m <- sum(gamma*p_i0^(1-eta))^(1/(1-eta))
 
     # calculate new eta ( = unit intermediate cost)
-    p_i1 <- C * z^(-1) * p_m^(1-beta)
+    p_i1 <- (beta^(-beta) * (1-beta)^(beta-1)) * z^(-1) * p_m^(1-beta)
 
     obj = sum((p_i1-p_i0)^2)
   }
 
-  A <- p_i1^(1-epsilon) / p_r^(1-epsilon)
-  G <- p_i1^(1-eta) / p_m^(1-eta) # But needs to be multiplied by (1-beta), really.
+  A <- lambda * p_i1^(1-epsilon) / p_r^(1-epsilon)
+  G <- gamma * p_i1^(1-eta) / p_m^(1-eta) # But needs to be multiplied by (1-beta), really.
 
+  obj = tol + 1
   v0 <- v1 <- rep_len(1/N,N)
-  while ((v1-v0)^2 %>% sum() %>% sqrt()) {
+  while (obj > tol) {
+    print(obj)
     v0 <- v1
     v1 <- A * sum(beta*v0) + G * sum((1-beta)*v0)
+    obj <- (v1-v0)^2 %>% sum() %>% sqrt()
   }
 
   return(list(v=v1,p_r=p_r,p_i=p_i1))
