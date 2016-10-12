@@ -1,14 +1,14 @@
 ########################################################################
-# initialize_functions.R
+# initialize_functions_xy.R
 # Functions to generate fake parameters and data
 # License: MIT
 
-# "Granularity, Network Asymmetry and Aggregate Volatility"
+# ""
 # Jesse Tweedle
-# Sep 15, 2016
+# Oct 15, 2016
 ########################################################################
 
-initialize_fake_links <- function(R,N) {
+initialize_fake_links_xy <- function(R,N,r_density,n_density) {
 
   # Plant value-added share
   beta <- runif(N,0.1,0.9)
@@ -26,7 +26,7 @@ initialize_fake_links <- function(R,N) {
   I <- ir %*% (beta * s)
 
   # Non-zero edges of region-plant demand matrix
-  Er <- rsparsematrix(R,N,density=1,rand.x=function(n) 1)
+  Er <- rsparsematrix(R,N,density=r_density,rand.x=function(n) 1)
   diag(Er) <- 1 # for sure. 
   
   while (min(colSums(Er))==0 | min(rowSums(Er))==0) {
@@ -49,7 +49,7 @@ initialize_fake_links <- function(R,N) {
 
   # Non-zero edges of plant-plant demand matrix
   # Possibly add services demand to each one that doesn't have a thing.
-  En <- rsparsematrix(N,N,density=1,rand.x=function(n) 1)
+  En <- rsparsematrix(N,N,density=n_density,rand.x=function(n) 1)
   diag(En[1:R,1:R]) <- 1
   while ( min(colSums(En))==0 | min(rowSums(En))==0 | sum(diag(En[(R+1):N,(R+1):N]))>0 ) {
 
@@ -78,27 +78,11 @@ initialize_fake_links <- function(R,N) {
   return(list(beta=beta,Er=Er,En=En,I=I,ir=ir,s=s))
 }
 
-initialize_fakes <- function(R,N,args) {
+initialize_fakes_xy <- function(R,N,r_density,n_density,args) {
 
   if (missing(args)) {
-    args <- initialize_fake_links(R,N)
+    args <- initialize_fake_links_xy(R,N,r_density,n_density)
   }
-
-  # to debug:
-  # rm(list=ls(all=TRUE))
-  # gc()
-  # source("R/initialize_functions.R")
-  # source("R/benchmark.R")
-  # source("R/helpers.R")
-  # R <- 2
-  # N <- 5
-  # args <- initialize_fake_links(R,N)
-
-  # Region-plant demand edges
-  Er <- args$Er
-
-  # Plant-plant demand edges
-  En <- args$En
 
   # Region income
   I <- args$I
@@ -119,24 +103,13 @@ initialize_fakes <- function(R,N,args) {
   z <- rlnorm(N,0,2)
 
   # Solve for consistent region-plant and plant-plant demand share matrices.
-  demand <- benchmark(R,N,args=args)
+  demand <- benchmark_xy(R,N,args=args)
 
-  # Region-plant demand shares
-  A <- demand$A
-
-  # Plant-plant demand shares.
-  G <- demand$G
-
-  # Change these to data frames.
-  A.df <- A %>% s_to_df()
-  G.df <- G %>% s_to_df()
-
-  # Generate trade cost matrix, plant-plant.
-  Ti <- sparseMatrix(i=G.df$i, j=G.df$j, x=1, dims=c(N,N)) * (1+matrix(rlnorm(N^2,-1,0.1),nrow=N,ncol=N)) %>% as("sparseMatrix")
-
-  # Generate trade cost matrix, region-plant.
-  Tr <- sparseMatrix(i=A.df$i, j=A.df$j, x=1, dims=c(R,N)) * (1+matrix(rlnorm(R*N,-1,0.1),nrow=R,ncol=N)) %>% as("sparseMatrix")
-
+  Tr <- args$Er 
+  Tr@x <- 1+rlnorm(length(Tr@x),-1,0.5)
+  Ti <- args$En 
+  Ti@x <- 1+rlnorm(length(Ti@x),-1,0.5)
+  
   # Return fake data; don't need non-zero edge matrices anymore.
-  return(list(A=A,beta=beta,C=C,G=G,I=I,ir=ir,s=s,Ti=Ti,Tr=Tr,z=z))
+  return(list(beta=beta,C=C,I=I,ir=ir,s=s,Ti=Ti,Tr=Tr,xr=demand$xr,xn=demand$xn,y=demand$y,z=z))
 }

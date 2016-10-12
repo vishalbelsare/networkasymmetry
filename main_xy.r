@@ -1,11 +1,11 @@
 ########################################################################
-# main.R
+# main_xy.R
 # Clean and load relevant files
 # License: MIT
 
 # ""
 # Jesse Tweedle
-# Sep 15, 2016
+# Oct 15, 2016
 ########################################################################
 
 library(dplyr)
@@ -15,20 +15,7 @@ library(stringr)
 library(tidyr)
 library(ggplot2)
 
-# A, G, Ti, Tr, beta, z.
-# A: matrix of observed region-plant demand shares, RxN
-# beta: vector of plant labour shares, Nx1
-# G: matrix of observed plant-plant demand shares (IO table), NxN
-# N: number of plants, scalar
-# R: number of regions, scalar
-# sigma: elasticity of substitution, scalar
-# Ti: trade costs matrix for plants, NxN
-# Tr: trade costs matrix for region-plants, RxN
-# z: vector of plant productivity, Nx1
-
 rm(list=ls(all=TRUE))
-# Sometimes R or RStudio (?) doesn't automatically clean removed objects. I think.
-# That's a problem with a NxN matrix when N really big. So clean just in case:
 gc()
 
 # Tip from http://jeromyanglim.tumblr.com/post/33418725712/how-to-source-all-r-files-in-a-directory
@@ -44,27 +31,51 @@ sourceDir(paste0(getwd(),"/R"))
 
 set.seed(10) # set.seed(10), R=2, N=300 screws up.
 R <- 2
-N <- 10
+N <- 200
 sigma <- 2 # here.
 eta <- epsilon <- sigma
+r_density <- 1
+n_density <- 1
 
-xxx
 
 print("fake edges")
-argsx <- initialize_fake_links(R,N)
+argsx <- initialize_fake_links_xy(R,N,r_density,n_density)
 
 print("fake shares")
-args <- initialize_fakes(R,N,args=c(sigma=sigma,argsx))
+args <- initialize_fakes_xy(R,N,r_density,n_density,args=c(sigma=sigma,argsx))
 
-print("solve for lambda, gamma; use A and G as initial guesses?")
-lg <- solve_lambda_gamma(R,N,args=c(sigma=sigma,args))
+args$A <- ((args$xr %>% to_sdiag()) %*% argsx$Er) * (argsx$Er %*% (args$y %>% to_sdiag()))
+args$G <- ((args$xn %>% to_sdiag()) %*% argsx$En) * (argsx$En %*% (args$y %>% to_sdiag()))
+
+
+sx <- t(args$A) %*% args$I + t(args$G) %*% args$s
+(args$s[(R+1):N]/sx[(R+1):N])  %>% as.vector() %>% summary()
+plot(args$s[(R+1):N] %>% log(), sx[(R+1):N] %>% log())
+summary(lm(args$s[(R+1):N] %>% log() ~ sx[(R+1):N] %>% log()))
+# tibble(s=s,sx=sx[,1]) %>% mutate(d=s/sx) %>% View()
+
+# so benchmarking is ok. no CES, no problem.
+
+
+args$sigma <- sigma
+args$eta <- eta
+args$epsilon <- epsilon
+
+print("solve for lambda, gamma")
+#lg <- 
+  #solve_lambda_gamma_xy(R,N,args=args)
+#lg 
+lg <- solve_gamma(R,N,args=args)
 
 print("solve for s, A, G") # should try to use existing s, A, G, as intial arguments.
-solved <- solve_v(R,N,args=c(sigma=sigma,args,lg))
-plot(args$s %>% log(),solved$v[,1] %>% log())
+solved <- solve_v(R,N,args=c(args,lg))
+
+plot(args$s[(R+1):N] %>% log(),solved$v[(R+1):N,1] %>% log())
 print("done")
 
-xxx
+
+tibble(i=(R+1):N,s=args$s[(R+1):N],sx=sx[(R+1):N],v=solved$v[(R+1):N,1]) %>% View()
+      
 
 # counterfactuals
 #^((beta-1)/(1-epsilon))
@@ -81,8 +92,9 @@ z_aug <- args$z * rowSums(lg$gamma)^((1-args$beta)/(eta-1))
 
 # 1. set everything but z to 1 (or 1/N)
 ext_args <- list(
-  beta=rep_len(0.5,N), #args$beta,
+  beta=args$beta,
   eta=eta,
+  ir=args$ir,
   epsilon=epsilon,
   lambda=(1/N),
   gamma=(1/N),
@@ -90,6 +102,13 @@ ext_args <- list(
 )
 
 z_ext <- solve_v_dense_network(R,N,args=ext_args)
+
+tibble(i=(R+1):N,s=args$s[(R+1):N],sx=sx[(R+1):N],v=solved$v[(R+1):N,1],vdens=z_ext$v[(R+1):N]) %>% View()
+
+plot(z_aug[(R+1):N] %>% log(), z_ext$v[(R+1):N] %>% log())
+summary(lm(args$s[(R+1):N] %>% log() ~ sx[(R+1):N] %>% log()))
+
+xxx
 
 # 2. set everything but gamma, lambda to 1
 Tip <- args$Ti

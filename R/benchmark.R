@@ -32,7 +32,7 @@ benchmark <- function(R,N,args) {
   # Output
   s <- args$s
 
-  tol <- 1 #/ sqrt(N)  # should be a function of N, because of normalization by sum(y1).
+  tol <- 1e-5 #/ sqrt(N)  # should be a function of N, because of normalization by sum(y1).
 
   A0 <- A1 <- Er
   G0 <- G1 <- En
@@ -42,6 +42,7 @@ benchmark <- function(R,N,args) {
   obj <- tol + 1
 
   while (obj > tol) {
+    print(obj)
     # save last iteration's solutions
     A0 <- A1
     G0 <- G1
