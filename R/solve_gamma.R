@@ -1,11 +1,11 @@
 ########################################################################
 # solve_lambda_gamma.R
-# Function to solve for unobserved \Lambda and \Gamma,given observed A and G.
+# Function to solve for unobserved \Lambda and \Gamma, given observed A and G.
 # License: MIT
 
 # ""
 # Jesse Tweedle
-# Sep 15, 2016
+# , 2016
 ########################################################################
 
 solve_gamma <- function(R,N,args) {
@@ -15,7 +15,6 @@ solve_gamma <- function(R,N,args) {
   A <- args$A
   G <- args$G
   ir <- args$ir
-#  sigma <- args$sigma
   eta <- args$eta
   epsilon <- args$epsilon
   Ti <- args$Ti
@@ -28,10 +27,8 @@ solve_gamma <- function(R,N,args) {
   # plant prices
   p_i0 <- p_i1 <- .sparseDiagonal(n=N,x=1)
 
-  GAM0 <- GAM1 <- G #rsparsematrix(nrow=N,ncol=N,density=1)
-#  GAM1@x <- rep_len(1,N^2)
-
-  # set objective: Frobenius norms of all matrices
+  GAM0 <- GAM1 <- G 
+  
   obj = tol + 1
   obj_0 <- obj + 1
   counter <- 0

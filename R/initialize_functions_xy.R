@@ -16,7 +16,7 @@ initialize_fake_links_xy <- function(R,N,r_density,n_density) {
   # Plant output
   # Now need to add an international region and the 'other' industry.
   # for now, just add the other industry in every region.
-  s <- rlnorm(N-R,0,2) * (N-R)
+  s <- (rlnorm(N-R,0,5) * (N-R)) %>% sort(decreasing=TRUE)
   s <- c(rlnorm(R,0,1) * sum(s) * 1.5, s)
   
   # Plant's region
@@ -28,6 +28,8 @@ initialize_fake_links_xy <- function(R,N,r_density,n_density) {
   # Non-zero edges of region-plant demand matrix
   Er <- rsparsematrix(R,N,density=r_density,rand.x=function(n) 1)
   diag(Er) <- 1 # for sure. 
+  
+  # need to assign random 
   
   while (min(colSums(Er))==0 | min(rowSums(Er))==0) {
     if (min(colSums(Er))==0) {
@@ -51,27 +53,44 @@ initialize_fake_links_xy <- function(R,N,r_density,n_density) {
   # Possibly add services demand to each one that doesn't have a thing.
   En <- rsparsematrix(N,N,density=n_density,rand.x=function(n) 1)
   diag(En[1:R,1:R]) <- 1
-  while ( min(colSums(En))==0 | min(rowSums(En))==0 | sum(diag(En[(R+1):N,(R+1):N]))>0 ) {
 
-    diag(En[(R+1):N,(R+1):N]) <- 0
-    # for columns:
-    if (min(colSums(En))==0) {
-      q <- colSums(En) == 0
-
-      En[,q] <- tibble(j=1:length(q[q]),
-                       i=sample((1:R)[!(1:R %in% j)],length(q[q]),replace=TRUE),
-                       x=1) %>%
-        df_to_s(dims=c(N,length(q[q])))
-    }
-    if (min(rowSums(En))==0) {
-      q <- rowSums(En) == 0
-      En[q,] <- tibble(i=1:length(q[q]),
-                       j=sample((1:R)[!(1:R %in% i)],length(q[q]),replace=TRUE),
-                       x=1) %>%
-        df_to_s(dims=c(length(q[q]),N))
-    }
-    En <- En %>% summary() %>% tbl_df() %>% filter(x>0) %>% df_to_s(dims=c(N,N))
+# these j. # set En[]
+  if (min(colSums(En))==0) {
+    q <- colSums(En)==0
+    En[,q] <- 
+      tibble(j=1:length(q[q]),
+              i=1+which(q), #sample((1:N)[!(1:N %in% which(q))],length(q[q]),replace=TRUE),
+              x=1) %>% df_to_s(dims=c(N,length(q[q])))
   }
+  if (min(rowSums(En))==0) {
+    q <- rowSums(En)==0
+    En[q,] <- tibble(i=1:length(q[q]),
+                       j=1+which(q), #sample((1:N)[!(1:N %in% which(q))],length(q[q]),replace=TRUE),
+                       x=1) %>% df_to_s(dims=c(length(q[q]),N))
+  }
+  En <- En %>% summary() %>% tbl_df() %>% filter(x>0) %>% df_to_s(dims=c(N,N))
+  
+  # while ( min(colSums(En))==0 | min(rowSums(En))==0 | sum(diag(En[(R+1):N,(R+1):N]))>0 ) {
+  # 
+  #   diag(En[(R+1):N,(R+1):N]) <- 0
+  #   # for columns:
+  #   if (min(colSums(En))==0) {
+  #     q <- colSums(En) == 0
+  # 
+  #     En[,q] <- tibble(j=1:length(q[q]),
+  #                      i=sample((1:R)[!(1:R %in% j)],length(q[q]),replace=TRUE),
+  #                      x=1) %>%
+  #       df_to_s(dims=c(N,length(q[q])))
+  #   }
+  #   if (min(rowSums(En))==0) {
+  #     q <- rowSums(En) == 0
+  #     En[q,] <- tibble(i=1:length(q[q]),
+  #                      j=sample((1:R)[!(1:R %in% i)],length(q[q]),replace=TRUE),
+  #                      x=1) %>%
+  #       df_to_s(dims=c(length(q[q]),N))
+  #   }
+  #   En <- En %>% summary() %>% tbl_df() %>% filter(x>0) %>% df_to_s(dims=c(N,N))
+  # }
 
 
   # Return generated parameters.

@@ -29,35 +29,46 @@ sourceDir <- function(path, trace = TRUE, ...) {
 
 sourceDir(paste0(getwd(),"/R"))
 
-set.seed(10) # set.seed(10), R=2, N=300 screws up.
+set.seed(9) # set.seed(10), R=2, N=300 screws up.
 R <- 2
-N <- 200
-sigma <- 2 # here.
-eta <- epsilon <- sigma
-r_density <- 1
-n_density <- 1
+N <- 20
+# sigma <- 2 # here.
+eta <- epsilon <- 2
+r_density <- 1 #0.1
+n_density <- 0.1 #0.15
 
 
+# [4,7]
 print("fake edges")
 argsx <- initialize_fake_links_xy(R,N,r_density,n_density)
 
 print("fake shares")
-args <- initialize_fakes_xy(R,N,r_density,n_density,args=c(sigma=sigma,argsx))
+args <- initialize_fakes_xy(R,N,r_density,n_density,args=argsx)
 
+args$y[,1]
+args$xn[,1]
+args$xr[,1]
+
+argsx$En
+xxx
 args$A <- ((args$xr %>% to_sdiag()) %*% argsx$Er) * (argsx$Er %*% (args$y %>% to_sdiag()))
-args$G <- ((args$xn %>% to_sdiag()) %*% argsx$En) * (argsx$En %*% (args$y %>% to_sdiag()))
+args$G <- 
+  ((args$xn %>% to_sdiag()) %*% argsx$En) * (argsx$En %*% (args$y %>% to_sdiag()))
 
+A <- args$A
+G <- args$G
+
+xxx
 
 sx <- t(args$A) %*% args$I + t(args$G) %*% args$s
 (args$s[(R+1):N]/sx[(R+1):N])  %>% as.vector() %>% summary()
-plot(args$s[(R+1):N] %>% log(), sx[(R+1):N] %>% log())
+#plot(args$s[(R+1):N] %>% log(), sx[(R+1):N] %>% log())
 summary(lm(args$s[(R+1):N] %>% log() ~ sx[(R+1):N] %>% log()))
 # tibble(s=s,sx=sx[,1]) %>% mutate(d=s/sx) %>% View()
 
 # so benchmarking is ok. no CES, no problem.
 
-
-args$sigma <- sigma
+#args$sigma <- sigma
 args$eta <- eta
 args$epsilon <- epsilon
 
@@ -73,22 +84,17 @@ solved <- solve_v(R,N,args=c(args,lg))
 plot(args$s[(R+1):N] %>% log(),solved$v[(R+1):N,1] %>% log())
 print("done")
 
+summary(lm(solved$v[(R+1):N,1] %>% log() ~ sx[(R+1):N] %>% log()))
 
-tibble(i=(R+1):N,s=args$s[(R+1):N],sx=sx[(R+1):N],v=solved$v[(R+1):N,1]) %>% View()
-      
-
+# tibble(i=(R+1):N,s=args$s[(R+1):N],sx=sx[(R+1):N],v=solved$v[(R+1):N,1]) %>% View()
+xxx      
 # counterfactuals
 #^((beta-1)/(1-epsilon))
 xlp <- rowSums(lg$lambda)^(-1) %>% to_sdiag()
 lp_aug <- xlp %*% lg$lambda
 xgp <- rowSums(lg$gamma)^(-1) %>% to_sdiag()
 gp_aug <- xgp %*% lg$gamma
-#^((beta-1)/(1-eta))
 z_aug <- args$z * rowSums(lg$gamma)^((1-args$beta)/(eta-1))
-
-# htf can I keep love-of-variety constant? Adding a million products to production function
-# want the augmented bit to stay constant. So go back to production function, not the other thing.
-# Normalize gamma, or gamma 1/N.
 
 # 1. set everything but z to 1 (or 1/N)
 ext_args <- list(
@@ -102,13 +108,6 @@ ext_args <- list(
 )
 
 z_ext <- solve_v_dense_network(R,N,args=ext_args)
-
-tibble(i=(R+1):N,s=args$s[(R+1):N],sx=sx[(R+1):N],v=solved$v[(R+1):N,1],vdens=z_ext$v[(R+1):N]) %>% View()
-
-plot(z_aug[(R+1):N] %>% log(), z_ext$v[(R+1):N] %>% log())
-summary(lm(args$s[(R+1):N] %>% log() ~ sx[(R+1):N] %>% log()))
-
-xxx
 
 # 2. set everything but gamma, lambda to 1
 Tip <- args$Ti
@@ -133,24 +132,6 @@ demand_args <- list(
 )
 
 d_c <- solve_v(R,N,args=demand_args)
-
-beta_args <- list(
-  beta=rep_len(0.5,N),
-  C=args$C,
-  ir=args$ir,
-  p_i=solved$p_i,
-  p_r=solved$p_r,
-  s=args$s,
-  sigma=sigma,
-  Ti=args$Ti,
-  Tr=args$Tr,
-  v=solved$v,
-  lambda=lg$lambda,
-  gamma=lg$gamma,
-  z=args$z
-)
-
-beta_c <- solve_v(R,N,args=beta_args)
 
 augment_args <- list(
   beta=args$beta,
@@ -196,6 +177,7 @@ gamd <- gamd / sum(gamd)
 
 higher_order_args <- list(
   beta=args$beta,
+  ir=args$ir,
   eta=eta,
   epsilon=epsilon,
   lambda=lamd,
@@ -218,7 +200,10 @@ dat <- tibble(
 )
 
 #dat <- dat %>% rownames_to_column() %>% mutate(vv=sum(vp),vp=vp/vv) %>% select(-vv) %>% gather(type,size,v:vp)
-dat <- dat %>% rownames_to_column() %>% gather(type,size,Data:Demand)
+dat <- dat %>% rownames_to_column() %>% gather(type,size,Data:Demand) %>% arrange(-size) %>% slice(-(1:R))
+
+# need to re-normalize after that.
+dat <- dat %>% group_by(type) %>% mutate(size2=size/sum(size))
 
 p <- ggplot(dat) + # %>% filter(type=="v" | type=="vext")) +
   stat_density(position="dodge",trim=TRUE,geom="line",aes(x=size,colour=type)) +
@@ -238,3 +223,7 @@ ggplot(dat) + geom_point(aes(x=s,y=size,colour=type),alpha=0.3) + scale_x_log10(
 print(
   dat %>% group_by(type) %>% mutate(size=size^2) %>% summarize(size=sum(size)) %>% mutate(size=sqrt(size))
 )
+
+dat %>% group_by(type) %>% arrange(-size) %>% slice(1:5) %>% View() #slice((R+1):(R+6)) %>% View()
+
+# hmm. 
