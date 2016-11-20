@@ -48,12 +48,12 @@ solve_v <- function(R,N,args) {
     # calculate new eta ( = unit intermediate cost)
     temp <- (Ti %*% p_i0)
     temp@x <- temp@x^(1-sigma)
-    m2 <- rowSums(gamma * temp)^((1-beta)/(1-sigma))
+    m2 <- rowSums(gamma * temp)^(1/(1-sigma))
 #    eta <- (m2 * C) %>% to_sdiag()
     eta <- m2
 
     # calculate new p_i1
-    p_i1 <- (C * eta / z) %>% to_sdiag()
+    p_i1 <- (C * eta^(1-beta) / z) %>% to_sdiag()
 #    print(rowSums(eta))
 
     obj = norm(p_r1-p_r0,"f") + norm(p_i1-p_i0,"f")

@@ -30,13 +30,15 @@ sourceDir <- function(path, trace = TRUE, ...) {
 sourceDir(paste0(getwd(),"/R"))
 
 set.seed(9) # set.seed(10), R=2, N=300 screws up.
-R <- 2
-N <- 20
+R <- 10
+N <- 5000
 # sigma <- 2 # here.
 eta <- epsilon <- 2
 r_density <- 1 #0.1
 n_density <- 0.1 #0.15
 
+# so, the idea is that xj * yi is reasonable, but yi is really small, so xj must be really big?
+# 
 
 # [4,7]
 print("fake edges")
@@ -45,25 +47,22 @@ argsx <- initialize_fake_links_xy(R,N,r_density,n_density)
 print("fake shares")
 args <- initialize_fakes_xy(R,N,r_density,n_density,args=argsx)
 
-args$y[,1]
-args$xn[,1]
-args$xr[,1]
+args$y[,1] %>% summary()
+args$xn[,1] %>% summary()
+args$xr[,1] %>% summary()
 
-argsx$En
-xxx
 args$A <- ((args$xr %>% to_sdiag()) %*% argsx$Er) * (argsx$Er %*% (args$y %>% to_sdiag()))
-args$G <- 
-  ((args$xn %>% to_sdiag()) %*% argsx$En) * (argsx$En %*% (args$y %>% to_sdiag()))
+args$G <- ((args$xn %>% to_sdiag()) %*% argsx$En) * (argsx$En %*% (args$y %>% to_sdiag()))
 
 A <- args$A
 G <- args$G
 
-xxx
-
 sx <- t(args$A) %*% args$I + t(args$G) %*% args$s
+
 (args$s[(R+1):N]/sx[(R+1):N])  %>% as.vector() %>% summary()
 #plot(args$s[(R+1):N] %>% log(), sx[(R+1):N] %>% log())
 summary(lm(args$s[(R+1):N] %>% log() ~ sx[(R+1):N] %>% log()))
+#summary(lm(args$y[(R+1):N,1] %>% log() ~ sx[(R+1):N] %>% log()))
 # tibble(s=s,sx=sx[,1]) %>% mutate(d=s/sx) %>% View()
 
 # so benchmarking is ok. no CES, no problem.
@@ -79,7 +78,7 @@ print("solve for lambda, gamma")
 lg <- solve_gamma(R,N,args=args)
 
 print("solve for s, A, G") # should try to use existing s, A, G, as intial arguments.
-solved <- solve_v(R,N,args=c(args,lg))
+solved <- solve_v(R,N,args=c(sigma=2,args,lg))
 
 plot(args$s[(R+1):N] %>% log(),solved$v[(R+1):N,1] %>% log())
 print("done")
