@@ -54,7 +54,6 @@ solve_v <- function(R,N,args) {
 
     # calculate new p_i1
     p_i1 <- (C * eta^(1-beta) / z) %>% to_sdiag()
-#    print(rowSums(eta))
 
     obj = norm(p_r1-p_r0,"f") + norm(p_i1-p_i0,"f")
     if (!is.finite(obj)) {

@@ -60,14 +60,17 @@ solve_gamma <- function(R,N,args) {
     # calculate new p_i1
     p_i1 <- (C * p_mi^(1-beta) / z) %>% to_sdiag()
 
-    temp.3 <- (mxx / (1-beta)) %>% to_sdiag()
+    # really need p_mi^(eta-1), but that gives mxx back, so use that directly
+    temp.3 <- (mxx / (1-beta)) %>% to_sdiag() 
     
     temp.4 <- Ti %*% p_i1
     temp.4@x <- temp.4@x^(eta-1)
+    
+    # Calculate new estimate of gamma.
     GAM1 <- temp.3 %*% (G * temp.4)
 
     # solve for w, normalize p and p?
-    obj <- (diag(p_i1) - diag(p_i0))^2 %>% sum() %>% sqrt()
+    obj <- sqrt(sum((diag(p_i1) - diag(p_i0))^2))
     print(obj)
   }
 
@@ -106,7 +109,7 @@ solve_gamma <- function(R,N,args) {
     temp.2@x <- temp.2@x^(epsilon-1)
     
     LAM1 <- temp.1 %*% (A * temp.2)
-    obj <- (diag(p_r1) - diag(p_r0))^2 %>% sum() %>% sqrt()
+    obj <- sqrt(sum((diag(p_r1) - diag(p_r0))^2))
     print(obj)
     
   }

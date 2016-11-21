@@ -42,19 +42,25 @@ sourceDir <- function(path, trace = TRUE, ...) {
 
 sourceDir(paste0(getwd(),"/R"))
 
+
 set.seed(10) # set.seed(10), R=2, N=300 screws up.
-R <- 2
-N <- 10
-sigma <- 2 # here.
-eta <- epsilon <- sigma
+fakes <- TRUE
+if (fakes) {
+  R <- 2
+  N <- 10
+  sigma <- 2 # here.
+  eta <- epsilon <- sigma
 
-xxx
+  print("fake edges")
+  argsx <- initialize_fake_links(R,N)
+  
+  print("fake shares")
+  args <- initialize_fakes(R,N,args=c(sigma=sigma,argsx))
 
-print("fake edges")
-argsx <- initialize_fake_links(R,N)
-
-print("fake shares")
-args <- initialize_fakes(R,N,args=c(sigma=sigma,argsx))
+} else {
+  # Load data.
+  # Get E, etc., and benchmark to get A, G, using firm-network-lasso code.
+}
 
 print("solve for lambda, gamma; use A and G as initial guesses?")
 lg <- solve_lambda_gamma(R,N,args=c(sigma=sigma,args))

@@ -118,14 +118,15 @@ initialize_fakes <- function(R,N,args) {
   # Productivity
   z <- rlnorm(N,0,2)
 
-  # Solve for consistent region-plant and plant-plant demand share matrices.
-  demand <- benchmark(R,N,args=args)
-
-  # Region-plant demand shares
-  A <- demand$A
-
-  # Plant-plant demand shares.
-  G <- demand$G
+  # here, do firm-network-lasso thing instead.
+  # # Solve for consistent region-plant and plant-plant demand share matrices.
+  # demand <- benchmark(R,N,args=args)
+  # 
+  # # Region-plant demand shares
+  # A <- demand$A
+  # 
+  # # Plant-plant demand shares.
+  # G <- demand$G
 
   # Change these to data frames.
   A.df <- A %>% s_to_df()
