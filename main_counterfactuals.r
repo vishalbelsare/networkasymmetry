@@ -41,32 +41,61 @@ sourceDir <- function(path, trace = TRUE, ...) {
 }
 
 sourceDir(paste0(getwd(),"/R"))
+rm(initialize_fake_links,initialize_fakes)
 
+# sigma <- 2 # here.
+eta <- epsilon <- 2
 
 set.seed(10) # set.seed(10), R=2, N=300 screws up.
 fakes <- TRUE
 if (fakes) {
-  R <- 2
-  N <- 10
-  sigma <- 2 # here.
-  eta <- epsilon <- sigma
-
-  print("fake edges")
-  argsx <- initialize_fake_links(R,N)
+  R <- 10
+  N <- 1000
+  K <- 10
+  region_density <- 0.1
+  firm_density <- 0.05
+  scale <- N
   
-  print("fake shares")
-  args <- initialize_fakes(R,N,args=c(sigma=sigma,argsx))
+  # print("fake edges")
+  # argsx <- initialize_fake_links(R,N)
+  # 
+  # print("fake shares")
+  # args <- initialize_fakes(R,N,args=c(sigma=sigma,argsx))
 
+  # instead, call the functions from firm-network-lasso
+  # then network_lasso_benchmark.R
+  
+  sourceDir("/Users/jessetweedle/Documents/github/firm-network-lasso/R")
+  
+  # need to source all the stuff from the other project.
+  args <- initialize_fake_economy(R,K,N,region_density,firm_density,scale)
+  bmrkd <- network_lasso_benchmark(R,N,args$I[,1],args$ik,args$kk,args$s[,1],args$beta,summary=TRUE)
+  Tr <- args$A
+  Tr@x <- 1+rlnorm(length(Tr@x),0,0.5)
+  Ti <- args$G
+  Ti@x <- 1+rlnorm(length(Ti@x),0,0.5)
+  z <- rlnorm(N,0,1)
 } else {
   # Load data.
   # Get E, etc., and benchmark to get A, G, using firm-network-lasso code.
 }
 
+# now put them in args, I suppose
+
+# need these other ones too.
+args$C <- args$beta^(-args$beta) * (1-args$beta)^(args$beta-1)
+args$eta <- eta
+args$epsilon <- epsilon
+
+# A=A,beta=beta,G=G,I=I,ir=ir,ik=ik,kk=kk,s=s
+args$A <- bmrkd$A_hat
+args$G <- bmrkd$G_hat
+
 print("solve for lambda, gamma; use A and G as initial guesses?")
-lg <- solve_lambda_gamma(R,N,args=c(sigma=sigma,args))
+lg <- solve_gamma(R,N,args=args)
 
 print("solve for s, A, G") # should try to use existing s, A, G, as intial arguments.
-solved <- solve_v(R,N,args=c(sigma=sigma,args,lg))
+solved <- solve_v(R,N,args=c(args,lg))
 plot(args$s %>% log(),solved$v[,1] %>% log())
 print("done")
 

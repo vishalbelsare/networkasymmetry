@@ -120,6 +120,7 @@ initialize_fakes <- function(R,N,args) {
 
   # here, do firm-network-lasso thing instead.
   # # Solve for consistent region-plant and plant-plant demand share matrices.
+  # want to pass I, ik, kk, and other things. why wouldn't I just initialize the whole thing like that?
   # demand <- benchmark(R,N,args=args)
   # 
   # # Region-plant demand shares
